@@ -8,6 +8,31 @@
 - The existing public brand mark, colors, typography, and demo screens are retained.
 - No backend API contract or authentication/payment integration is available.
 
+## Source structure
+
+The application entry and screen code follow an app-shell plus feature-based layout:
+
+```text
+src/
+  app/App.jsx                         # Router, locale provider, and demo state
+  components/                         # Shared brand, locale toggle, identity, and modal UI
+  features/
+    admin/
+      components/StudentDialogs.jsx
+      pages/StudentManagementPage.jsx
+    public/pages/
+      HomePage.jsx
+      PublicPages.jsx                 # Shared public shell and secondary public routes
+    student/pages/StudentProfilePage.jsx
+  i18n/                               # Locale provider and message catalogs
+  mocks/                              # Fictional demo records
+  services/                           # Preview-only service boundary
+  styles.css                          # Existing global design system and feature styles
+  main.jsx                            # Vite bootstrap
+```
+
+`src/App.jsx` remains as a compatibility re-export of `src/app/App.jsx`. Route composition and in-memory demo state live in the app layer; page components and shared UI live in their respective features/components. Public pages currently share a module for their shell and related simple routes; split them further when they gain independent behavior or tests.
+
 ## Implemented in this increment
 
 ### Design foundation

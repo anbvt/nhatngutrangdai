@@ -7,32 +7,15 @@ import {
   Check,
   Clock3,
   GraduationCap,
-  Languages,
   Menu,
   MessageCircle,
   X,
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useLocale } from "../../i18n/LocaleProvider.jsx";
-import { demoCourses, getCourseText } from "../../mocks/demoCourses.js";
-import { previewApplication } from "../../services/mockApplicationService.js";
-
-export function LanguageToggle() {
-  const { locale, setLocale, t } = useLocale();
-  const nextLocale = locale === "vi" ? "ja" : "vi";
-  return (
-    <button
-      className="language-toggle"
-      type="button"
-      aria-label={t("switchLanguage")}
-      title={t("switchLanguage")}
-      onClick={() => setLocale(nextLocale)}
-    >
-      <Languages size={16} aria-hidden="true" />
-      <span>{nextLocale === "ja" ? "日本語" : "Tiếng Việt"}</span>
-    </button>
-  );
-}
+import LanguageToggle from "../../../components/LanguageToggle.jsx";
+import { useLocale } from "../../../i18n/LocaleProvider.jsx";
+import { demoCourses, getCourseText } from "../../../mocks/demoCourses.js";
+import { previewApplication } from "../../../services/mockApplicationService.js";
 
 function SchoolBrand() {
   const { t } = useLocale();
