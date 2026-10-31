@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { BrowserRouter, Link, Route, Routes, useNavigate } from "react-router-dom";
 import {
   ArrowDown,
   ArrowLeft,
@@ -30,108 +31,24 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-
-const initialStudents = [
-  {
-    id: "HV-24031",
-    name: "Nguyễn Minh Anh",
-    email: "minhanh.nguyen@email.com",
-    phone: "0903 482 176",
-    course: "Tiếng Nhật sơ cấp N5",
-    level: "N5",
-    status: "Đang học",
-    progress: 68,
-    joined: "12/08/2026",
-    avatar: "MA",
-    color: "lavender",
-  },
-  {
-    id: "HV-24030",
-    name: "Trần Quốc Bảo",
-    email: "quocbao.tran@email.com",
-    phone: "0918 205 694",
-    course: "Giao tiếp tiếng Nhật",
-    level: "Giao tiếp",
-    status: "Đang học",
-    progress: 42,
-    joined: "08/08/2026",
-    avatar: "QB",
-    color: "peach",
-  },
-  {
-    id: "HV-24029",
-    name: "Lê Hoàng Yến",
-    email: "hoangyen.le@email.com",
-    phone: "0976 331 582",
-    course: "Luyện thi JLPT N4",
-    level: "N4",
-    status: "Chờ xác nhận",
-    progress: 0,
-    joined: "03/08/2026",
-    avatar: "HY",
-    color: "mint",
-  },
-  {
-    id: "HV-24028",
-    name: "Phạm Gia Huy",
-    email: "giahuy.pham@email.com",
-    phone: "0938 714 205",
-    course: "Tiếng Nhật sơ cấp N5",
-    level: "N5",
-    status: "Đang học",
-    progress: 84,
-    joined: "29/07/2026",
-    avatar: "GH",
-    color: "blue",
-  },
-  {
-    id: "HV-24027",
-    name: "Võ Ngọc Hân",
-    email: "ngochan.vo@email.com",
-    phone: "0908 144 927",
-    course: "Giao tiếp tiếng Nhật",
-    level: "Giao tiếp",
-    status: "Đã hoàn thành",
-    progress: 100,
-    joined: "18/07/2026",
-    avatar: "NH",
-    color: "rose",
-  },
-];
-
-const courses = [
-  {
-    level: "01 / NỀN TẢNG",
-    title: "Tiếng Nhật sơ cấp N5",
-    description: "Bắt đầu từ bảng chữ cái, từng bước giao tiếp trong những tình huống gần gũi.",
-    schedule: "12 tuần · 3 buổi / tuần",
-    price: "2.400.000",
-    tone: "course-lilac",
-    glyph: "あ",
-  },
-  {
-    level: "02 / GIAO TIẾP",
-    title: "Giao tiếp tiếng Nhật",
-    description: "Luyện phản xạ nói và cách diễn đạt tự nhiên trong công việc, cuộc sống.",
-    schedule: "10 tuần · 2 buổi / tuần",
-    price: "2.800.000",
-    tone: "course-peach",
-    glyph: "話",
-  },
-  {
-    level: "03 / MỤC TIÊU JLPT",
-    title: "Luyện thi JLPT N4",
-    description: "Củng cố kiến thức, làm quen dạng đề và xây dựng kế hoạch ôn tập hiệu quả.",
-    schedule: "14 tuần · 3 buổi / tuần",
-    price: "3.200.000",
-    tone: "course-sage",
-    glyph: "合",
-  },
-];
+import { LocaleProvider, useLocale } from "./i18n/LocaleProvider.jsx";
+import { initialStudents } from "./mocks/demoStudents.js";
+import { demoCourses as courses, getCourseText } from "./mocks/demoCourses.js";
+import {
+  AboutPage,
+  AuthPage,
+  ContactPage,
+  CourseDetailPage,
+  CoursesPage,
+  EnrollmentPage,
+  LanguageToggle,
+  NewsPage,
+  NotFoundPage,
+} from "./features/public/PublicPages.jsx";
 
 function Brand({ inverse = false }) {
   return (
-    <a className={`brand ${inverse ? "brand-inverse" : ""}`} href="#home" aria-label="Nhật Ngữ Trảng Dài">
+    <Link className={`brand ${inverse ? "brand-inverse" : ""}`} to="/" aria-label="Nhật Ngữ Trảng Dài">
       <span className="brand-mark" aria-hidden="true">
         <span>日</span>
       </span>
@@ -139,7 +56,7 @@ function Brand({ inverse = false }) {
         <strong>NHẬT NGỮ</strong>
         <small>TRẢNG DÀI</small>
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -161,9 +78,42 @@ function StatusBadge({ status }) {
 }
 
 function Modal({ title, eyebrow, onClose, children, wide = false }) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previouslyFocused = document.activeElement;
+    const focusable = dialog?.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]');
+    focusable?.[0]?.focus();
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, []);
+
   return (
     <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <section ref={dialogRef} className={`modal ${wide ? "modal-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex="-1">
         <div className="modal-top">
           <div>
             <p className="eyebrow">{eyebrow}</p>
@@ -179,104 +129,54 @@ function Modal({ title, eyebrow, onClose, children, wide = false }) {
   );
 }
 
-function RegistrationModal({ course, onClose, onSubmit }) {
-  const [submitted, setSubmitted] = useState(false);
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    onSubmit({
-      name: formData.get("name").trim(),
-      email: formData.get("email").trim(),
-      phone: formData.get("phone").trim(),
-      course: course.title,
-    });
-    setSubmitted(true);
-  }
-
-  return (
-    <Modal title={submitted ? "Đã nhận thông tin!" : "Bắt đầu hành trình của bạn"} eyebrow="ĐĂNG KÝ TƯ VẤN" onClose={onClose}>
-      {submitted ? (
-        <div className="success-state">
-          <span className="success-icon"><Check size={24} /></span>
-          <p>Thông tin đăng ký đã được thêm vào danh sách mẫu. Trung tâm sẽ liên hệ với bạn sớm nhé!</p>
-          <button className="button button-dark button-full" type="button" onClick={onClose}>Hoàn tất</button>
-        </div>
-      ) : (
-        <form className="form-stack" onSubmit={handleSubmit}>
-          <label>
-            Họ và tên
-            <input name="name" placeholder="Nguyễn Văn A" autoComplete="name" required />
-          </label>
-          <label>
-            Số điện thoại
-            <input name="phone" type="tel" placeholder="09xx xxx xxx" autoComplete="tel" required />
-          </label>
-          <label>
-            Email
-            <input name="email" type="email" placeholder="ban@email.com" autoComplete="email" required />
-          </label>
-          <label>
-            Khóa học quan tâm
-            <input value={course.title} readOnly />
-          </label>
-          <button className="button button-dark button-full" type="submit">
-            Gửi đăng ký <ArrowRight size={17} />
-          </button>
-          <p className="form-note">Thông tin trên chỉ được lưu trong phiên trải nghiệm này.</p>
-        </form>
-      )}
-    </Modal>
-  );
-}
-
 function HomePage({ onNavigate, onRegister }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { locale, t } = useLocale();
 
   return (
     <div className="public-page" id="home">
       <header className="public-header">
         <div className="public-nav">
           <Brand />
-          <nav className="nav-links" aria-label="Điều hướng chính">
-            <a href="#courses">Khóa học</a>
-            <a href="#approach">Lộ trình</a>
-            <a href="#about">Về chúng tôi</a>
+          <nav className="nav-links" aria-label={t("primaryNavigation")}>
+            <Link to="/courses">{t("courses")}</Link>
+            <Link to="/about">{t("about")}</Link>
+            <Link to="/news">{t("news")}</Link>
+            <Link to="/contact">{t("contact")}</Link>
           </nav>
           <div className="nav-actions">
+            <LanguageToggle />
             <button className="nav-login" type="button" onClick={() => onNavigate("profile")}>
-              <UserRound size={16} /> Khu vực học viên
+              <UserRound size={16} /> {t("studentPortal")}
             </button>
-            <button className="button button-dark nav-cta" type="button" onClick={() => onRegister(courses[0])}>
-              Tư vấn khóa học <ArrowUpRight size={16} />
-            </button>
+            <Link className="button button-dark nav-cta" to="/enroll">{t("enroll")} <ArrowUpRight size={16} /></Link>
           </div>
-          <button className="mobile-menu icon-button" aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"} aria-expanded={mobileMenuOpen} aria-controls="mobile-navigation" type="button" onClick={() => setMobileMenuOpen((open) => !open)}>
+          <button className="mobile-menu icon-button" aria-label={mobileMenuOpen ? t("closeMenu") : t("openMenu")} aria-expanded={mobileMenuOpen} aria-controls="mobile-navigation" type="button" onClick={() => setMobileMenuOpen((open) => !open)}>
             {mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}
           </button>
         </div>
         {mobileMenuOpen && (
           <nav className="mobile-nav" id="mobile-navigation" aria-label="Điều hướng trên thiết bị di động">
-            <a href="#courses" onClick={() => setMobileMenuOpen(false)}>Khóa học</a>
-            <a href="#approach" onClick={() => setMobileMenuOpen(false)}>Lộ trình</a>
-            <a href="#about" onClick={() => setMobileMenuOpen(false)}>Về chúng tôi</a>
-            <button type="button" onClick={() => { setMobileMenuOpen(false); onNavigate("profile"); }}>Khu vực học viên</button>
-            <button type="button" onClick={() => { setMobileMenuOpen(false); onNavigate("admin"); }}>Quản lý học viên</button>
+            <Link to="/courses" onClick={() => setMobileMenuOpen(false)}>{t("courses")}</Link>
+            <Link to="/about" onClick={() => setMobileMenuOpen(false)}>{t("about")}</Link>
+            <Link to="/news" onClick={() => setMobileMenuOpen(false)}>{t("news")}</Link>
+            <Link to="/contact" onClick={() => setMobileMenuOpen(false)}>{t("contact")}</Link>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); onNavigate("profile"); }}>{t("studentPortal")}</button>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); onNavigate("admin"); }}>{t("adminDemo")}</button>
+            <LanguageToggle />
           </nav>
         )}
       </header>
 
-      <main>
+      <main id="page-content">
         <section className="hero-section">
           <div className="hero-copy">
-            <span className="mini-label"><span className="live-dot" /> CÙNG BẠN BẮT ĐẦU TỪ HÔM NAY</span>
-            <h1>Mỗi ngày một chút,<br /><em>tiếng Nhật</em> gần hơn.</h1>
-            <p className="hero-description">
-              Một hành trình học tập vừa sức, có người đồng hành và một lộ trình dành riêng cho mục tiêu của bạn.
-            </p>
+            <span className="mini-label"><span className="live-dot" /> {t("heroEyebrow")}</span>
+            <h1>{t("heroTitle")}<br /><em>{t("heroTitleAccent")}</em></h1>
+            <p className="hero-description">{t("heroDescription")}</p>
             <div className="hero-actions">
-              <a className="button button-orange" href="#courses">Khám phá khóa học <ArrowRight size={17} /></a>
-              <a className="text-link" href="#approach">Tìm hiểu lộ trình <ArrowDown size={15} /></a>
+              <Link className="button button-orange" to="/courses">{t("exploreCourses")} <ArrowRight size={17} /></Link>
+              <a className="text-link" href="#approach">{t("learnApproach")} <ArrowDown size={15} /></a>
             </div>
             <div className="hero-social-proof">
               <div className="avatar-stack" aria-hidden="true">
@@ -284,7 +184,7 @@ function HomePage({ onNavigate, onRegister }) {
                 <span className="proof-avatar proof-2">美</span>
                 <span className="proof-avatar proof-3">学</span>
               </div>
-              <div><strong>Học theo nhịp riêng của bạn</strong><small>Chọn lớp phù hợp, bắt đầu tự tin</small></div>
+              <div><strong>{t("heroProofTitle")}</strong><small>{t("heroProofDescription")}</small></div>
             </div>
           </div>
           <div className="hero-art" aria-label="Minh họa hành trình học tiếng Nhật">
@@ -305,39 +205,39 @@ function HomePage({ onNavigate, onRegister }) {
         </section>
 
         <section className="trust-strip" id="approach">
-          <div><span className="strip-icon"><GraduationCap size={19} /></span><span><strong>Học đúng trình độ</strong><small>Bắt đầu từ nơi bạn đang đứng</small></span></div>
-          <div><span className="strip-icon"><MessageCircle size={18} /></span><span><strong>Thực hành giao tiếp</strong><small>Dùng tiếng Nhật trong đời sống</small></span></div>
-          <div><span className="strip-icon"><CalendarDays size={18} /></span><span><strong>Lịch học linh hoạt</strong><small>Chọn nhịp học hợp với mình</small></span></div>
+          <div><span className="strip-icon"><GraduationCap size={19} /></span><span><strong>{t("trustLevelTitle")}</strong><small>{t("trustLevelBody")}</small></span></div>
+          <div><span className="strip-icon"><MessageCircle size={18} /></span><span><strong>{t("trustPracticeTitle")}</strong><small>{t("trustPracticeBody")}</small></span></div>
+          <div><span className="strip-icon"><CalendarDays size={18} /></span><span><strong>{t("trustScheduleTitle")}</strong><small>{t("trustScheduleBody")}</small></span></div>
         </section>
 
         <section className="courses-section section-wrap" id="courses">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">CHỌN ĐIỂM BẮT ĐẦU</span>
-              <h2>Khóa học dành cho <em>mục tiêu của bạn.</em></h2>
+              <span className="eyebrow">{t("courseEyebrow")}</span>
+              <h2>{t("courseHeading")} <em>{t("courseHeadingAccent")}</em></h2>
             </div>
-            <p>Dù bạn mới làm quen hay đang chuẩn bị cho JLPT, hãy chọn một lộ trình phù hợp với mình.</p>
+            <p>{t("courseIntro")}</p>
           </div>
           <div className="course-grid">
             {courses.map((course) => (
               <article className={`course-card ${course.tone}`} key={course.title}>
                 <div className="course-card-top">
-                  <span className="course-level">{course.level}</span>
+                  <span className="course-level">{getCourseText(course, locale, "level")}</span>
                   <span className="course-glyph" aria-hidden="true">{course.glyph}</span>
                 </div>
-                <h3>{course.title}</h3>
-                <p>{course.description}</p>
-                <div className="course-meta"><span><Clock3 size={15} />{course.schedule}</span></div>
+                <h3>{getCourseText(course, locale, "title")}</h3>
+                <p>{getCourseText(course, locale, "description")}</p>
+                <div className="course-meta"><span><Clock3 size={15} />{getCourseText(course, locale, "schedule")}</span></div>
                 <div className="course-card-bottom">
-                  <span><small>Học phí tham khảo</small><strong>{course.price}<i>đ</i></strong></span>
-                  <button className="round-arrow" type="button" aria-label={`Đăng ký ${course.title}`} onClick={() => onRegister(course)}>
+                  <span><small>{t("sampleTuition")}</small><strong>{new Intl.NumberFormat(locale === "ja" ? "ja-JP" : "vi-VN").format(course.priceValue)}<i>đ</i></strong></span>
+                  <button className="round-arrow" type="button" aria-label={`${t("enroll")}: ${getCourseText(course, locale, "title")}`} onClick={() => onRegister(course)}>
                     <ArrowUpRight size={19} />
                   </button>
                 </div>
               </article>
             ))}
           </div>
-          <p className="sample-note">Thông tin khóa học và học phí trên là dữ liệu minh họa cho giao diện.</p>
+          <p className="sample-note">{t("sampleDataNote")}</p>
         </section>
 
         <section className="approach-section section-wrap" id="about">
@@ -350,31 +250,31 @@ function HomePage({ onNavigate, onRegister }) {
             <div className="approach-note"><Sparkles size={16} /> Tiến bộ theo cách của bạn</div>
           </div>
           <div className="approach-copy">
-            <span className="eyebrow">HỌC CÓ ĐÍCH ĐẾN</span>
-            <h2>Từng bước nhỏ,<br /><em>mở ra điều lớn.</em></h2>
-            <p>Không cần phải biết hết mọi thứ ngay từ đầu. Hãy bắt đầu với một mục tiêu rõ ràng, rồi kiên trì tiến thêm một bước mỗi buổi học.</p>
+            <span className="eyebrow">{t("approachEyebrow")}</span>
+            <h2>{t("approachTitle")}<br /><em>{t("approachTitleAccent")}</em></h2>
+            <p>{t("approachBody")}</p>
             <div className="approach-list">
-              <div><span>01</span><p><strong>Xác định mục tiêu</strong><small>Giao tiếp, công việc hay kỳ thi JLPT?</small></p><Check size={17} /></div>
-              <div><span>02</span><p><strong>Chọn lộ trình phù hợp</strong><small>Học theo trình độ và thời gian của bạn.</small></p><Check size={17} /></div>
-              <div><span>03</span><p><strong>Tiến bộ mỗi ngày</strong><small>Thực hành đều đặn, tự tin hơn từng chút.</small></p><Check size={17} /></div>
+              <div><span>01</span><p><strong>{t("goalStepTitle")}</strong><small>{t("goalStepBody")}</small></p><Check size={17} /></div>
+              <div><span>02</span><p><strong>{t("pathStepTitle")}</strong><small>{t("pathStepBody")}</small></p><Check size={17} /></div>
+              <div><span>03</span><p><strong>{t("progressStepTitle")}</strong><small>{t("progressStepBody")}</small></p><Check size={17} /></div>
             </div>
-            <button className="text-link text-link-dark" type="button" onClick={() => onRegister(courses[0])}>Cùng bắt đầu nhé <ArrowRight size={16} /></button>
+            <Link className="text-link text-link-dark" to="/enroll">{t("startJourney")} <ArrowRight size={16} /></Link>
           </div>
         </section>
 
         <section className="closing-cta">
           <div className="closing-mark">日</div>
-          <span className="eyebrow">HỌC TIẾNG NHẬT, BẮT ĐẦU TỪ BẠN</span>
-          <h2>Sẵn sàng cho <em>bước đầu tiên?</em></h2>
-          <p>Chia sẻ mục tiêu của bạn, chúng mình sẽ giúp bạn tìm lớp học phù hợp.</p>
-          <button className="button button-orange" type="button" onClick={() => onRegister(courses[0])}>Nhận tư vấn miễn phí <ArrowRight size={17} /></button>
+          <span className="eyebrow">{t("closingEyebrow")}</span>
+          <h2>{t("closingTitle")} <em>{t("closingTitleAccent")}</em></h2>
+          <p>{t("closingBody")}</p>
+          <Link className="button button-orange" to="/enroll">{t("consultFree")} <ArrowRight size={17} /></Link>
         </section>
       </main>
 
       <footer className="public-footer">
         <Brand inverse />
-        <p>Nuôi dưỡng tình yêu tiếng Nhật, từng bước mỗi ngày.</p>
-        <div><span>© 2026 Nhật Ngữ Trảng Dài</span><button type="button" onClick={() => onNavigate("admin")}>Khu vực quản lý</button></div>
+        <p>{t("footerTagline")}</p>
+        <div><span>{t("copyright")}</span><button type="button" onClick={() => onNavigate("admin")}>{t("adminDemo")}</button></div>
       </footer>
     </div>
   );
@@ -578,14 +478,23 @@ function EditStudentModal({ student, onClose, onSave }) {
 }
 
 export default function App() {
-  const [view, setView] = useState("home");
+  return (
+    <BrowserRouter>
+      <LocaleProvider>
+        <AppRoutes />
+      </LocaleProvider>
+    </BrowserRouter>
+  );
+}
+
+function AppRoutes() {
   const [students, setStudents] = useState(initialStudents);
-  const [registerCourse, setRegisterCourse] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const profileStudent = students.find((student) => student.id === "HV-24031") || students[0];
+  const navigate = useNavigate();
 
-  function createStudent(details, fromRegistration = false) {
+  function createStudent(details) {
     const initials = details.name.split(/\s+/).slice(-2).map((part) => part[0]).join("").toUpperCase();
     const newStudent = {
       ...details,
@@ -598,10 +507,8 @@ export default function App() {
       color: ["lavender", "peach", "mint", "blue", "rose"][students.length % 5],
     };
     setStudents((current) => [newStudent, ...current]);
-    if (!fromRegistration) {
-      setShowAdd(false);
-      setView("admin");
-    }
+    setShowAdd(false);
+    navigate("/demo/admin");
   }
 
   function saveStudent(updated) {
@@ -609,17 +516,33 @@ export default function App() {
     setEditingStudent(null);
   }
 
-  function navigate(nextView) {
-    setView(nextView);
+  function navigateDemo(nextView) {
+    const destination = nextView === "home"
+      ? "/"
+      : nextView === "admin"
+        ? "/demo/admin"
+        : "/demo/student";
+    navigate(destination);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
     <>
-      {view === "home" && <HomePage onNavigate={navigate} onRegister={setRegisterCourse} />}
-      {view === "admin" && <AdminPage students={students} onAdd={() => setShowAdd(true)} onEdit={setEditingStudent} onNavigate={navigate} />}
-      {view === "profile" && <StudentProfile student={profileStudent} onSave={saveStudent} onNavigate={navigate} />}
-      {registerCourse && <RegistrationModal course={registerCourse} onClose={() => setRegisterCourse(null)} onSubmit={(details) => createStudent(details, true)} />}
+      <Routes>
+        <Route path="/" element={<HomePage onNavigate={navigateDemo} onRegister={(course) => navigate(`/enroll?course=${course.id}`)} />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/courses/:courseId" element={<CourseDetailPage onEnroll={(course) => navigate(`/enroll?course=${course.id}`)} />} />
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/enroll" element={<EnrollmentPage />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/demo" element={<AdminPage students={students} onAdd={() => setShowAdd(true)} onEdit={setEditingStudent} onNavigate={navigateDemo} />} />
+        <Route path="/demo/admin" element={<AdminPage students={students} onAdd={() => setShowAdd(true)} onEdit={setEditingStudent} onNavigate={navigateDemo} />} />
+        <Route path="/demo/student" element={<StudentProfile student={profileStudent} onSave={saveStudent} onNavigate={navigateDemo} />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
       {showAdd && <AddStudentModal onClose={() => setShowAdd(false)} onAdd={createStudent} />}
       {editingStudent && <EditStudentModal student={editingStudent} onClose={() => setEditingStudent(null)} onSave={saveStudent} />}
     </>
